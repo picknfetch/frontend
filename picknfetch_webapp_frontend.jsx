@@ -1,8 +1,6 @@
-// PicknFetch - Selective ZIP File Downloader (Frontend + Backend)
+// PicknFetch - Selective ZIP File Downloader (Frontend)
 // Tech Stack: React (frontend), Flask (backend), Vercel + Render.com (for free hosting)
 
-// --- FRONTEND (React) ---
-// src/App.js
 import React, { useState } from "react";
 import axios from "axios";
 
@@ -26,7 +24,7 @@ function App() {
       setFiles(res.data.files);
       setStatus("ZIP contents loaded.");
     } catch (err) {
-      setStatus("Error: " + err.response?.data?.error || err.message);
+      setStatus("Error: " + (err.response?.data?.error || err.message));
     }
   };
 
