@@ -13,12 +13,10 @@ function App() {
   const [status, setStatus] = useState("");
   const [downloading, setDownloading] = useState(false);
 
-  const BACKEND_URL = "https://website-brzq.onrender.com";
-
   const loadContents = async () => {
     setStatus("Loading ZIP contents...");
     try {
-      const res = await axios.post(`${BACKEND_URL}/api/inspect`, {
+      const res = await axios.post("https://website-brzq.onrender.com/api/inspect", {
         url,
         cookies,
         userAgent: impersonate
@@ -40,19 +38,43 @@ function App() {
     try {
       for (const i of selected) {
         const file = files[i];
+
+        const payload = {
+          url,
+          filename: file.filename,
+          offset: file.local_header_offset,
+          comp_size: file.compressed_size,
+          compression: file.compression,
+          cookies,
+          userAgent: impersonate
+            ? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/91 Safari/537.36"
+            : ""
+        };
+
+        // Try send message to extension
+        const useExtension = await new Promise((resolve) => {
+          const timeout = setTimeout(() => resolve(false), 500);
+
+          window.postMessage({ type: "PICKNFETCH_DOWNLOAD", payload }, "*");
+
+          window.addEventListener("message", function handler(e) {
+            if (e.data.type === "PICKNFETCH_EXTENSION_ACK") {
+              clearTimeout(timeout);
+              window.removeEventListener("message", handler);
+              resolve(true);
+            }
+          });
+        });
+
+        if (useExtension) {
+          setStatus("Sent to extension for download...");
+          continue;
+        }
+
+        // Fallback to backend
         const response = await axios.post(
-          `${BACKEND_URL}/api/download`,
-          {
-            url,
-            filename: file.filename,
-            offset: file.local_header_offset,
-            comp_size: file.compressed_size,
-            compression: file.compression,
-            cookies,
-            userAgent: impersonate
-              ? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/91 Safari/537.36"
-              : ""
-          },
+          "https://website-brzq.onrender.com/api/download",
+          payload,
           { responseType: "blob" }
         );
 
