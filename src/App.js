@@ -33,11 +33,47 @@ function App() {
     setStatus("Preparing download...");
     setDownloading(true);
     try {
+const downloadFiles = async () => {
+  if (selected.length === 0) return alert("Please select files to download.");
+  setStatus("Preparing download...");
+  setDownloading(true);
+
+  try {
+    for (const i of selected) {
+      const file = files[i];
       const res = await axios.post(
-        "https://website-brzq.onrender.com/api/download",
-        { url, cookies, impersonate, indices: selected },
+        "https://picknfetch-backend.onrender.com/api/download",
+        {
+          url,
+          filename: file.filename,
+          offset: file.local_header_offset,
+          comp_size: file.compressed_size,
+          compression: file.compression,
+          cookies,
+          userAgent: impersonate
+            ? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/91 Safari/537.36"
+            : ""
+        },
         { responseType: "blob" }
       );
+
+      const blob = new Blob([res.data]);
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = file.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    setStatus("Download complete.");
+  } catch (err) {
+    setStatus("Download failed: " + (err.response?.data?.error || err.message));
+  }
+
+  setDownloading(false);
+};
+
       const blob = new Blob([res.data]);
       const link = document.createElement("a");
       link.href = window.URL.createObjectURL(blob);
