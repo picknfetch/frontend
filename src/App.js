@@ -13,10 +13,12 @@ function App() {
   const [status, setStatus] = useState("");
   const [downloading, setDownloading] = useState(false);
 
+  const BACKEND_URL = "https://website-brzq.onrender.com";
+
   const loadContents = async () => {
     setStatus("Loading ZIP contents...");
     try {
-      const res = await axios.post("https://website-brzq.onrender.com/api/inspect", {
+      const res = await axios.post(`${BACKEND_URL}/api/inspect`, {
         url,
         cookies,
         userAgent: impersonate
@@ -39,7 +41,7 @@ function App() {
       for (const i of selected) {
         const file = files[i];
         const response = await axios.post(
-          "https://website-brzq.onrender.com/api/download",
+          `${BACKEND_URL}/api/download`,
           {
             url,
             filename: file.filename,
