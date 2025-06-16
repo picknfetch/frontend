@@ -19,7 +19,9 @@ function App() {
       const res = await axios.post("https://website-brzq.onrender.com/api/inspect", {
         url,
         cookies,
-        impersonate
+        userAgent: impersonate
+          ? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/91 Safari/537.36"
+          : ""
       });
       setFiles(res.data.files);
       setStatus("ZIP contents loaded.");
@@ -32,57 +34,40 @@ function App() {
     if (selected.length === 0) return alert("Please select files to download.");
     setStatus("Preparing download...");
     setDownloading(true);
+
     try {
-const downloadFiles = async () => {
-  if (selected.length === 0) return alert("Please select files to download.");
-  setStatus("Preparing download...");
-  setDownloading(true);
+      for (const i of selected) {
+        const file = files[i];
+        const response = await axios.post(
+          "https://website-brzq.onrender.com/api/download",
+          {
+            url,
+            filename: file.filename,
+            offset: file.local_header_offset,
+            comp_size: file.compressed_size,
+            compression: file.compression,
+            cookies,
+            userAgent: impersonate
+              ? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/91 Safari/537.36"
+              : ""
+          },
+          { responseType: "blob" }
+        );
 
-  try {
-    for (const i of selected) {
-      const file = files[i];
-      const res = await axios.post(
-        "https://picknfetch-backend.onrender.com/api/download",
-        {
-          url,
-          filename: file.filename,
-          offset: file.local_header_offset,
-          comp_size: file.compressed_size,
-          compression: file.compression,
-          cookies,
-          userAgent: impersonate
-            ? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/91 Safari/537.36"
-            : ""
-        },
-        { responseType: "blob" }
-      );
+        const blob = new Blob([response.data]);
+        const link = document.createElement("a");
+        link.href = window.URL.createObjectURL(blob);
+        link.download = file.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
 
-      const blob = new Blob([res.data]);
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = file.filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    setStatus("Download complete.");
-  } catch (err) {
-    setStatus("Download failed: " + (err.response?.data?.error || err.message));
-  }
-
-  setDownloading(false);
-};
-
-      const blob = new Blob([res.data]);
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.download = "picknfetch_files.zip";
-      link.click();
-      setStatus("Download ready.");
+      setStatus("Download complete.");
     } catch (err) {
-      setStatus("Download failed: " + err.message);
+      setStatus("Download failed: " + (err.response?.data?.error || err.message));
     }
+
     setDownloading(false);
   };
 
@@ -135,7 +120,7 @@ const downloadFiles = async () => {
                           e.target.checked ? [...prev, i] : prev.filter((x) => x !== i)
                         );
                       }}
-                    /> {f.filename} ({f.size})
+                    /> {f.filename} ({f.size || f.compressed_size})
                   </label>
                 </li>
               ))}
